@@ -1,5 +1,5 @@
 <template>
-  <UHeader :links="[]">
+  <UHeader :toggle="false">
     <!-- Your existing templates for #left and #right -->
     
     <template #left>
