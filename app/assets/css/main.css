@@ -25,3 +25,8 @@
   --ui-bg-elevated: var(--ui-color-neutral-900);
   --ui-bg-accented: var(--ui-color-neutral-800);
 }
+
+
+.u-header-button {
+  display: none !important;
+}
