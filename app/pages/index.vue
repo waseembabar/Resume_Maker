@@ -1,10 +1,14 @@
- <script setup lang="ts">
+<script setup lang="ts">
 import { useResumeStore } from '../stores/resume.js'
 
 const store = useResumeStore()
 const newSkill = ref('')
-const ActiveTab = computed(() => store.activeTabIndex)
-// Define the tabs structure
+
+const ActiveTab = computed({
+  get: () => store.activeTabIndex,
+  set: (val) => (store.activeTabIndex = val)
+})
+
 const items = [
   { slot: 'personal', label: '1. Personal', icon: 'i-heroicons-user' },
   { slot: 'experience', label: '2. Experience', icon: 'i-heroicons-briefcase' },
@@ -13,406 +17,642 @@ const items = [
   { slot: 'skills', label: '5. Skills', icon: 'i-heroicons-bolt' }
 ]
 
-// Navigation logic
 function nextStep() {
-  if (ActiveTab.value < items.length - 1) {
-    ActiveTab.value++
+  if (store.activeTabIndex < items.length - 1) {
+    store.activeTabIndex++
   }
 }
 
-// Skills logic
 const addSkill = () => {
   if (newSkill.value.trim()) {
     store.skills.push(newSkill.value.trim())
     newSkill.value = ''
   }
 }
+
+function generateResume() {
+  console.log('Resume:', store.$state)
+  alert('Resume generated!')
+}
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto p-4 lg:p-8">
-    <div class="mb-8 text-center">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Resume Builder</h1>
-      <p class="text-gray-500 mt-2">Fill in your details to generate a professional CV {{ store.activeTabIndex }}
-         {{ store.unlockedTabs }}
-      </p>
+  <div class="w-full mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold">Resume Builder</h1>
+      <p class="text-gray-500">Fill details and see live preview</p>
     </div>
 
-    <UTabs v-model="store.activeTabIndex" :items="items" class="w-full">
-      
-      <template #personal>
-  <div class="relative overflow-hidden">
-    
-    <!-- Background Glow -->
-    <div class="absolute -top-32 -right-32 w-96 h-96 bg-primary-500/10 blur-3xl rounded-full"></div>
-    <div class="absolute bottom-0 left-0 w-72 h-72 bg-pink-500/10 blur-3xl rounded-full"></div>
+    <!-- MAIN LAYOUT -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-    <div class="relative space-y-8">
+      <!-- LEFT SIDE: FORM -->
+      <div class="w-full ">
 
-      <!-- Header -->
-      <div class="text-center mb-10">
-        
 
-        <h2 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
-          Personal Information
-        </h2>
+        <UTabs v-model="store.activeTabIndex" :items="items" class="w-full px-4">
 
-        <p class="text-gray-500 mt-3 max-w-2xl mx-auto">
-          Create a stunning first impression with a modern and professional profile.
-        </p>
-      </div>
+          <template #personal>
+            <div class="relative overflow-hidden px-4">
 
-      <!-- Main Card -->
-      <div class="bg-white/80 dark:bg-gray-900/70 backdrop-blur-2xl border border-white/20 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+              <!-- Background Glow -->
+              <div class="absolute -top-32 -right-32 w-96 h-96 bg-primary-500/10 blur-3xl rounded-full"></div>
+              <div class="absolute bottom-0 left-0 w-72 h-72 bg-pink-500/10 blur-3xl rounded-full"></div>
 
-        <!-- Top Gradient -->
-        <div class="h-2 bg-gradient-to-r from-primary-500 via-pink-500 to-purple-500"></div>
+              <div class="relative space-y-8">
 
-        <div class="p-8 lg:p-10 space-y-12">
+                <!-- Header -->
+                <div class="mt-4 mb-4">
 
-          <!-- Identity Section -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+                  <h2 class="text-xl text-md-2xl font-black tracking-tight text-gray-900 dark:text-white">
+                    Personal Information
+                  </h2>
 
-            <div>
-              <div class="flex items-center gap-3 mb-3">
-                <div class="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center">
-                  <UIcon name="i-heroicons-user-circle" class="w-6 h-6 text-primary-600" />
-                </div>
-
-                <div>
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    Identity
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    Your professional headline
+                  <p class="text-gray-500 pt-1">
+                    Create a stunning first impression with a modern and professional profile.
                   </p>
                 </div>
-              </div>
-            </div>
 
-            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              <UFormGroup label="Full Name">
-                <UInput
-                  v-model="store.personalInfo.fullName"
-                  size="xl"
-                  placeholder="Waseem Babar"
-                  icon="i-heroicons-user"
-                  color="primary"
-                  variant="outline"
-                  :ui="{
-                    rounded: 'rounded-2xl',
-                    padding: { xl: 'px-5 py-4' },
-                    base: 'bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 focus:border-primary-500 transition-all shadow-sm hover:shadow-lg'
-                  }"
-                />
-              </UFormGroup>
-
-              <UFormGroup label="Job Title">
-                <UInput
-                  v-model="store.personalInfo.jobTitle"
-                  size="xl"
-                  placeholder="Senior Vue Developer"
-                  icon="i-heroicons-briefcase"
-                  color="primary"
-                  variant="outline"
-                  :ui="{
-                    rounded: 'rounded-2xl',
-                    padding: { xl: 'px-5 py-4' },
-                    base: 'bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 focus:border-primary-500 transition-all shadow-sm hover:shadow-lg'
-                  }"
-                />
-              </UFormGroup>
-
-            </div>
-          </div>
-
-          <!-- Contact Section -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-
-            <div>
-              <div class="flex items-center gap-3 mb-3">
-                <div class="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center">
-                  <UIcon name="i-heroicons-envelope" class="w-6 h-6 text-pink-500" />
-                </div>
-
+                <!-- Main Card -->
                 <div>
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    Contact & Socials
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    Ways recruiters can reach you
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <div class="lg:col-span-2">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="">
 
-                <UFormGroup label="Email Address">
-                  <UInput
-                    v-model="store.personalInfo.email"
-                    icon="i-heroicons-envelope"
-                    placeholder="hello@waseem.com"
-                    size="lg"
-                    :ui="{
-                      rounded: 'rounded-2xl',
-                      base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
-                    }"
-                  />
-                </UFormGroup>
+                    <!-- Identity Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
 
-                <UFormGroup label="Phone Number">
-                  <UInput
-                    v-model="store.personalInfo.phone"
-                    icon="i-heroicons-phone"
-                    placeholder="+92 300..."
-                    size="lg"
-                    :ui="{
-                      rounded: 'rounded-2xl',
-                      base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
-                    }"
-                  />
-                </UFormGroup>
+                      <div>
+                        <div class="flex items-center gap-3 mb-3">
 
-                <UFormGroup label="Location">
-                  <UInput
-                    v-model="store.personalInfo.location"
-                    icon="i-heroicons-map-pin"
-                    placeholder="Islamabad, Pakistan"
-                    size="lg"
-                    :ui="{
-                      rounded: 'rounded-2xl',
-                      base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
-                    }"
-                  />
-                </UFormGroup>
+                          <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                              Identity
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                              Your professional headline
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                <UFormGroup label="GitHub URL">
-                  <UInput
-                    v-model="store.personalInfo.github"
-                    icon="i-simple-icons-github"
-                    placeholder="github.com/waseem"
-                    size="lg"
-                    :ui="{
-                      rounded: 'rounded-2xl',
-                      base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
-                    }"
-                  />
-                </UFormGroup>
+                      <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <UFormGroup label="Portfolio Website" class="md:col-span-2">
-                  <UInput
-                    v-model="store.personalInfo.portfolio"
-                    icon="i-heroicons-globe-alt"
-                    placeholder="www.yourportfolio.com"
-                    size="lg"
-                    :ui="{
-                      rounded: 'rounded-2xl',
-                      base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
-                    }"
-                  />
-                </UFormGroup>
+                        <UFormGroup label="Full Name">
+                          <UInput v-model="store.personalInfo.fullName" size="xl" placeholder="Waseem Babar"
+                            icon="i-heroicons-user" color="primary" variant="outline" :ui="{
+                              rounded: 'rounded-2xl',
+                              padding: { xl: 'px-5 py-4' },
+                              base: 'bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 focus:border-primary-500 transition-all shadow-sm hover:shadow-lg'
+                            }" />
+                        </UFormGroup>
 
-              </div>
-            </div>
-          </div>
+                        <UFormGroup label="Job Title">
+                          <UInput v-model="store.personalInfo.jobTitle" size="xl" placeholder="Senior Vue Developer"
+                            icon="i-heroicons-briefcase" color="primary" variant="outline" :ui="{
+                              rounded: 'rounded-2xl',
+                              padding: { xl: 'px-5 py-4' },
+                              base: 'bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 focus:border-primary-500 transition-all shadow-sm hover:shadow-lg'
+                            }" />
+                        </UFormGroup>
 
-          <!-- About Section -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+                      </div>
+                    </div>
 
-            <div>
-              <div class="flex items-center gap-3 mb-3">
-                <div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                  <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-purple-500" />
-                </div>
+                    <!-- Contact Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
 
-                <div>
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    About You
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    A short professional summary
-                  </p>
-                </div>
-              </div>
-            </div>
+                      <div>
+                        <div class="flex items-center gap-3 mb-3">
 
-            <div class="lg:col-span-2">
 
-              <UFormGroup label="Professional Summary">
-                <UTextarea
-                  v-model="store.personalInfo.aboutMe"
-                  :rows="7"
-                  placeholder="Passionate Front-end Developer with expertise in Vue.js, Nuxt, and modern UI/UX design..."
-                  :ui="{
-                    rounded: 'rounded-3xl',
-                    base: 'bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-primary-500 shadow-sm hover:shadow-lg transition-all p-4'
-                  }"
-                />
+                          <div>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+                              Contact & Socials
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                              Ways recruiters can reach you
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                <template #hint>
-                  <div class="flex items-center justify-between mt-2">
-                    <span class="text-xs text-gray-400">
-                      Recommended: 200-400 characters
-                    </span>
+                      <div class="lg:col-span-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    <span class="text-xs font-medium text-primary-500">
-                      {{ store.personalInfo.aboutMe?.length || 0 }}/400
-                    </span>
+                          <UFormGroup label="Email Address">
+                            <UInput v-model="store.personalInfo.email" icon="i-heroicons-envelope"
+                              placeholder="hello@waseem.com" size="lg" :ui="{
+                                rounded: 'rounded-2xl',
+                                base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
+                              }" />
+                          </UFormGroup>
+
+                          <UFormGroup label="Phone Number">
+                            <UInput v-model="store.personalInfo.phone" icon="i-heroicons-phone" placeholder="+92 300..."
+                              size="lg" :ui="{
+                                rounded: 'rounded-2xl',
+                                base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
+                              }" />
+                          </UFormGroup>
+
+                          <UFormGroup label="Location">
+                            <UInput v-model="store.personalInfo.location" icon="i-heroicons-map-pin"
+                              placeholder="Islamabad, Pakistan" size="lg" :ui="{
+                                rounded: 'rounded-2xl',
+                                base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
+                              }" />
+                          </UFormGroup>
+
+                          <UFormGroup label="GitHub URL">
+                            <UInput v-model="store.personalInfo.github" icon="i-simple-icons-github"
+                              placeholder="github.com/waseem" size="lg" :ui="{
+                                rounded: 'rounded-2xl',
+                                base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
+                              }" />
+                          </UFormGroup>
+
+                          <UFormGroup label="Portfolio Website" class="md:col-span-2">
+                            <UInput v-model="store.personalInfo.portfolio" icon="i-heroicons-globe-alt"
+                              placeholder="www.yourportfolio.com" size="lg" :ui="{
+                                rounded: 'rounded-2xl',
+                                base: 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all'
+                              }" />
+                          </UFormGroup>
+
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- About Section -->
+                    <div class=" ">
+                      <div class="flex flex-col mb-3">
+
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+                          About Me
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                          A brief summary of your professional background and aspirations
+                        </p>
+                      </div>
+                      <div class=" ">
+                        <UTextarea v-model="store.personalInfo.aboutMe" :rows="10" class="w-full"
+                          placeholder="Passionate Front-end Developer with expertise in Vue.js, Nuxt, and modern UI/UX design..." />
+
+                      </div>
+                    </div>
+
                   </div>
-                </template>
-              </UFormGroup>
+                </div>
+                <div class="flex justify-end mt-8 mb-5 ">
+                  <UButton @click="nextStep">Continue</UButton>
+                </div>
+
+                <!-- Bottom CTA -->
+
+
+              </div>
+            </div>
+          </template>
+
+          <template #experience>
+            <div class="mt-8 space-y-8">
+
+              <!-- Header -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    Work Experience
+                  </h3>
+
+                  <p class="text-sm text-gray-500 mt-1">
+                    Add your professional work experience
+                  </p>
+                </div>
+
+                <UBadge color="primary" variant="soft" size="lg">
+                  {{ store.experience.length }} Added
+                </UBadge>
+              </div>
+
+              <!-- Experience List -->
+              <div class="space-y-6">
+
+                <UCard v-for="(job, index) in store.experience" :key="index"
+                  class="relative overflow-hidden border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300">
+                  <!-- Header -->
+                  <template #header>
+                    <div class="flex justify-end">
+
+                      <!-- Delete -->
+                      <UButton v-if="store.experience.length > 1" color="red" variant="soft" icon="i-heroicons-trash"
+                        square @click="store.removeExperience(index)" />
+
+                    </div>
+                  </template>
+
+                  <!-- Form -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Company Name -->
+                   
+
+                    <!-- Position -->
+                    <UFormField label="Position" class="w-full">
+                      <UInput v-model="job.role" size="lg" class="w-full" icon="i-heroicons-briefcase"
+                        placeholder="Front End Developer" />
+                    </UFormField>
+
+                     <UFormField label="Company Name" class="w-full">
+                      <UInput v-model="job.company" size="lg" class="w-full" icon="i-heroicons-building-office"
+                        placeholder="Google / Microsoft / Freelance" />
+                    </UFormField>
+
+                    <!-- Start Date -->
+                    <UFormField label="Start Date" class="w-full">
+                      <UInput type="month" v-model="job.startDate" size="lg" class="w-full" />
+                    </UFormField>
+
+                    <!-- End Date -->
+                    <UFormField label="End Date" class="w-full">
+                      <UInput type="month" v-model="job.endDate" :disabled="job.isCurrent" size="lg" class="w-full" />
+                    </UFormField>
+
+                    <!-- Location -->
+                    <UFormField label="Company Location" class="w-full">
+                      <UInput v-model="job.location" size="lg" class="w-full" icon="i-heroicons-map-pin"
+                        placeholder="City, Country" />
+                    </UFormField>
+
+                    <!-- Current Working -->
+                    <UFormField label="Current Position" class="w-full">
+                      <div
+                        class="h-[34px] w-full flex items-center px-4 rounded-xl border border-gray-200 dark:border-gray-800">
+                        <UCheckbox v-model="job.isCurrent" label="Currently Working" />
+                      </div>
+                    </UFormField>
+
+                    <!-- Description -->
+                    <UFormField label="Job Description" class="md:col-span-2 w-full">
+                      <UTextarea v-model="job.description" :rows="5" autoresize class="w-full"
+                        placeholder="Describe your responsibilities, achievements, technologies used, and key contributions..." />
+                    </UFormField>
+
+                  </div>
+                </UCard>
+
+              </div>
+
+              <!-- Add Experience -->
+              <UButton block color="gray" variant="soft" icon="i-heroicons-plus"
+                class="py-5 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
+                @click="store.addExperience">
+                Add New Experience
+              </UButton>
+
+              <!-- Footer -->
+              <div class="flex items-center justify-between pt-4">
+
+                <UButton color="white" size="lg" icon="i-heroicons-arrow-left" @click="store.activeTabIndex--">
+                  Back
+                </UButton>
+
+                <UButton size="lg" trailing-icon="i-heroicons-arrow-right" @click="nextStep">
+                  Continue
+                </UButton>
+
+              </div>
 
             </div>
-          </div>
+          </template>
 
-        </div>
+          <template #education>
+            <div class="mt-8 space-y-8">
+
+              <!-- Header -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    Education
+                  </h3>
+
+                  <p class="text-sm text-gray-500 mt-1">
+                    Add your educational background
+                  </p>
+                </div>
+
+                <UBadge color="primary" variant="soft" size="lg">
+                  {{ store.education.length }} Added
+                </UBadge>
+              </div>
+
+              <!-- Education List -->
+              <div class="space-y-6">
+
+                <UCard v-for="(edu, index) in store.education" :key="index"
+                  class="relative overflow-hidden border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300">
+
+
+                  <!-- Header -->
+                  <template #header>
+                    <div class="flex items-center justify-end">
+                      <UButton :disabled="store.education.length <= 1" color="red" variant="soft"
+                        icon="i-heroicons-trash" square @click="store.removeEducation(index)" />
+
+                    </div>
+                  </template>
+
+                  <!-- Form -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Institution -->
+                    <UFormField label="School / University Name" class="w-full">
+                      <UInput v-model="edu.institution" size="lg" class="w-full" icon="i-heroicons-building-library"
+                        placeholder="Harvard University" />
+                    </UFormField>
+
+                    <!-- Location -->
+                    <UFormField label="Location" class="w-full">
+                      <UInput v-model="edu.location" size="lg" class="w-full" icon="i-heroicons-map-pin"
+                        placeholder="City, Country" />
+                    </UFormField>
+
+                    <!-- Field -->
+                    <UFormField label="Field of Study" class="w-full">
+                      <UInput v-model="edu.field" size="lg" class="w-full" icon="i-heroicons-book-open"
+                        placeholder="Computer Science" />
+                    </UFormField>
+
+                    <!-- Marks -->
+                    <UFormField label="Marks / CGPA" class="w-full">
+                      <UInput v-model="edu.marks" size="lg" class="w-full" icon="i-heroicons-star"
+                        placeholder="3.8 CGPA / 85%" />
+                    </UFormField>
+
+                    <!-- Start Date -->
+                    <UFormField label="Start Date" class="w-full">
+                      <UInput type="month" v-model="edu.startDate" size="lg" class="w-full" />
+                    </UFormField>
+
+                    <!-- End Date -->
+                    <UFormField label="End Date" class="w-full">
+                      <UInput type="month" v-model="edu.endDate" :disabled="edu.isCurrent" size="lg" class="w-full" />
+                    </UFormField>
+
+                    <UFormField label="isCurrent Education" class="w-full">
+                      <div
+                        class="h-[34px] w-full flex items-center px-4 rounded-xl border border-gray-200 dark:border-gray-800">
+                        <UCheckbox v-model="edu.isCurrent" label="Currently Studying" />
+                      </div>
+                    </UFormField>
+                  </div>
+
+                </UCard>
+
+              </div>
+
+              <!-- Add Education -->
+              <UButton block color="gray" variant="soft" icon="i-heroicons-plus"
+                class="py-5 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
+                @click="store.addEducation">
+                Add Education
+              </UButton>
+
+              <!-- Footer -->
+              <div class="flex items-center justify-between pt-4">
+
+                <UButton color="white" size="lg" icon="i-heroicons-arrow-left" @click="store.activeTabIndex--">
+                  Back
+                </UButton>
+
+                <UButton size="lg" trailing-icon="i-heroicons-arrow-right" @click="nextStep">
+                  Continue
+                </UButton>
+
+              </div>
+
+            </div>
+          </template>
+
+          <template #projects>
+            <div class="mt-8 space-y-8">
+
+              <!-- Header -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    Projects
+                  </h3>
+
+                  <p class="text-sm text-gray-500 mt-1">
+                    Showcase your personal and professional projects
+                  </p>
+                </div>
+
+                <UBadge color="primary" variant="soft" size="lg">
+                  {{ store.projects.length }} Added
+                </UBadge>
+              </div>
+
+              <!-- Projects List -->
+              <div class="space-y-6">
+
+                <UCard v-for="(project, index) in store.projects" :key="index"
+                  class="relative overflow-hidden border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300">
+
+                  <!-- Top Border -->
+
+
+                  <!-- Header -->
+                  <template #header>
+                    <div class="flex   justify-end">
+
+
+
+                      <!-- Delete -->
+                      <UButton color="red" variant="soft" icon="i-heroicons-trash"
+                        :disabled="store.projects.length === 1" square @click="store.removeProject(index)" />
+
+                    </div>
+                  </template>
+
+                  <!-- Form -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Project Name -->
+                    <UFormField label="Project Name" class="w-full">
+                      <UInput v-model="project.name" size="lg" class="w-full" icon="i-heroicons-folder"
+                        placeholder="E-Commerce Website" />
+                    </UFormField>
+
+                    <!-- Company -->
+                    <UFormField label="Company / Platform" class="w-full" help="Where you built this project">
+                      <UInput v-model="project.company" size="lg" class="w-full" icon="i-heroicons-building-office-2"
+                        placeholder="Freelance / Upwork / Company" />
+                    </UFormField>
+
+                    <!-- Start Date -->
+                    <UFormField label="Start Date" class="w-full">
+                      <UInput type="month" v-model="project.startDate" size="lg" class="w-full" />
+                    </UFormField>
+
+                    <!-- End Date -->
+                    <UFormField label="End Date" class="w-full">
+                      <UInput type="month" :disabled="project.isCurrent" v-model="project.endDate" size="lg"
+                        class="w-full" />
+                    </UFormField>
+                    <!-- Current Working -->
+                    <UFormField label="Current Working" class="w-full">
+                      <div
+                        class="h-[34px] w-full flex items-center px-4 rounded-xl border border-gray-200 dark:border-gray-800">
+                        <UCheckbox v-model="project.isCurrent" label="Currently Working" />
+                      </div>
+                    </UFormField>
+                    <!-- Tech Stack -->
+                    <UFormField label="Tech Stack" class="md:col-span-2 w-full">
+                      <UInput v-model="project.techStack" size="lg" class="w-full" icon="i-heroicons-command-line"
+                        placeholder="Nuxt 3, Tailwind CSS, MySQL" />
+                    </UFormField>
+
+                    <!-- Description -->
+                    <UFormField label="Project Description" class="md:col-span-2 w-full">
+                      <UTextarea v-model="project.description" :rows="5" autoresize class="w-full"
+                        placeholder="Describe your project features, goals, technologies used, and achievements..." />
+                    </UFormField>
+
+                  </div>
+
+                </UCard>
+
+              </div>
+
+              <!-- Add Project -->
+              <UButton block color="gray" variant="soft" icon="i-heroicons-plus"
+                class="py-5 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
+                @click="store.addProject">
+                Add Project
+              </UButton>
+
+              <!-- Footer -->
+              <div class="flex items-center justify-between pt-4">
+
+                <UButton color="white" size="lg" icon="i-heroicons-arrow-left" @click="store.activeTabIndex--">
+                  Back
+                </UButton>
+
+                <UButton size="lg" trailing-icon="i-heroicons-arrow-right" @click="nextStep">
+                  Continue
+                </UButton>
+
+              </div>
+
+            </div>
+          </template>
+
+          <template #skills>
+            <UCard class="mt-6 shadow-sm border-gray-200">
+              <div class="space-y-6">
+                <UFormGroup label="Expertise & Skills" help="Type a skill (e.g., JavaScript) and press Add or Enter">
+                  <div class="flex gap-2">
+                    <UInput v-model="newSkill" class="flex-1" placeholder="e.g. Nuxt.js" size="lg"
+                      @keyup.enter="addSkill" />
+                    <UButton size="lg" icon="i-heroicons-plus" @click="addSkill">Add</UButton>
+                  </div>
+                </UFormGroup>
+
+                <div
+                  class="flex flex-wrap gap-3 mt-4 min-h-[80px] p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300">
+                  <UBadge v-for="(skill, i) in store.skills" :key="i" size="lg"
+                    class="px-4 py-2 flex items-center gap-2">
+                    {{ skill }}
+                    <UIcon name="i-heroicons-x-mark" class="cursor-pointer hover:text-red-300"
+                      @click="store.skills.splice(i, 1)" />
+                  </UBadge>
+                  <p v-if="store.skills.length === 0" class="text-gray-400 text-sm italic w-full text-center">No skills
+                    added yet. Start typing above!</p>
+                </div>
+
+                <div class="flex justify-between mt-8 pt-6 border-t">
+                  <UButton color="white" size="lg" @click="store.activeTabIndex--">Back</UButton>
+                  <UButton color="primary" size="xl" class="px-12 font-bold shadow-lg" @click="generateResume">
+                    Generate Final Resume
+                  </UButton>
+                </div>
+              </div>
+            </UCard>
+          </template>
+
+        </UTabs>
       </div>
 
-      <!-- Bottom CTA -->
-      <div class="sticky bottom-4 z-20">
-        <div class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl border border-white/20 dark:border-gray-800 shadow-2xl rounded-3xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <!-- RIGHT SIDE: LIVE PREVIEW -->
+      <div
+        class="sticky top-6 h-[calc(100vh-3rem)] overflow-auto bg-white dark:bg-gray-900 border rounded-2xl p-6 shadow-lg">
+        <!-- {{ store.personalInfo }} -->
 
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-pink-500 flex items-center justify-center shadow-lg">
-              <UIcon name="i-heroicons-check-badge" class="w-7 h-7 text-white" />
-            </div>
+        <div class="text-center border-b pb-4" v-if="store.personalInfo?.fullName">
+          <h2 class="text-2xl font-bold">{{ store.personalInfo.fullName || 'Your Name' }}</h2>
+          <p class="text-gray-500">{{ store.personalInfo.jobTitle }}</p>
+          <div class="flex flex-wrap items-center justify-center mt-2 gap-2 text-center">
 
-            <div>
-              <h4 class="font-bold text-gray-900 dark:text-white">
-                Looking Professional ✨
-              </h4>
+            <p class="text-sm" v-if="store.personalInfo.email">{{ store.personalInfo.email }}</p>
 
-              <p class="text-sm text-gray-500">
-                Your profile is becoming recruiter-ready.
-              </p>
-            </div>
+            <span class="text-gray-400" v-if="store.personalInfo.phone">|</span>
+
+            <p class="text-sm" v-if="store.personalInfo.phone">{{ store.personalInfo.phone }}</p>
+
+            <span class="text-gray-400" v-if="store.personalInfo.portfolio">|</span>
+
+            <p class="text-sm" v-if="store.personalInfo.portfolio">{{ store.personalInfo.portfolio }}</p>
+
+            <span class="text-gray-400" v-if="store.personalInfo.github">|</span>
+
+            <p class="text-sm" v-if="store.personalInfo.github">{{ store.personalInfo.github }}</p>
+
+            <span class="text-gray-400" v-if="store.personalInfo.location">|</span>
+
+            <p class="text-sm" v-if="store.personalInfo.location">{{ store.personalInfo.location }}</p>
+
           </div>
-
-          <UButton
-            size="xl"
-            color="primary"
-            trailing-icon="i-heroicons-arrow-right"
-            class="px-8 py-4 rounded-2xl font-bold shadow-xl hover:scale-105 transition-all duration-300"
-            @click="nextStep"
-          >
-            Continue
-          </UButton>
-
         </div>
+
+        <div class="mt-4" v-if="store.personalInfo.aboutMe">
+          <h3 class="font-bold mb-1">About</h3>
+          <p class="text-sm text-gray-600">{{ store.personalInfo.aboutMe }}</p>
+        </div>
+
+        <div class="mt-4" v-if="store.experience.length > 0">
+          <h3 class="font-bold">Experience</h3> 
+          <div v-for="e in store.experience" class="text-sm mt-2">
+            <p class="font-semibold">{{ e.role }} <span v-if="e.company">-</span> {{ e.company }}</p>
+          </div>
+        </div>
+
+        <div class="mt-4" v-if="store.education.length">
+          <h3 class="font-bold">Education</h3>
+          <div v-for="e in store.education" class="text-sm mt-2">
+            <p>{{ e.institution }}</p>
+          </div>
+        </div>
+
+        <div class="mt-4" v-if="store.projects.length ">
+          <h3 class="font-bold">Projects {{ store.projects.length }}</h3>
+          <div v-for="p in store.projects" class="text-sm mt-2">
+            <p>{{ p.name }}</p>
+          </div>
+        </div>
+
+        <div class="mt-4" v-if="store.skills.length ">
+          <h3 class="font-bold">Skills</h3>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <UBadge v-for="s in store.skills" :key="s">{{ s }}</UBadge>
+          </div>
+        </div>
+
       </div>
 
     </div>
+
   </div>
 </template>
-
-      <template #experience>
-        <div class="mt-6 space-y-6">
-          <div v-for="(job, index) in store.experience" :key="index">
-            <UCard class="relative shadow-sm border-gray-200">
-              <template #header>
-                <div class="flex justify-between items-center">
-                  <span class="font-bold text-primary">Job Position #{{ index + 1 }}</span>
-                  <UButton v-if="store.experience.length > 1" color="red" variant="soft" icon="i-heroicons-trash" @click="store.removeExperience(index)" />
-                </div>
-              </template>
-              
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
-                <UFormGroup label="Company Name" class="md:col-span-3"><UInput v-model="job.company" size="lg" placeholder="Google / Freelance" /></UFormGroup>
-                <UFormGroup label="Job Position" class="md:col-span-3"><UInput v-model="job.role" size="lg" placeholder="Front End Developer" /></UFormGroup>
-                <UFormGroup label="Start Date" class="md:col-span-2"><UInput type="month" v-model="job.startDate" size="lg" /></UFormGroup>
-                <UFormGroup label="End Date" class="md:col-span-2"><UInput type="month" v-model="job.endDate" :disabled="job.isCurrent" size="lg" /></UFormGroup>
-                <UFormGroup label="Company Location" class="md:col-span-2"><UInput v-model="job.location" size="lg" placeholder="City, Country" /></UFormGroup>
-                <UFormGroup label="Job Description" class="md:col-span-6"><UTextarea v-model="job.description" :rows="3" placeholder="Describe your responsibilities..." /></UFormGroup>
-                <div class="md:col-span-6"><UCheckbox v-model="job.isCurrent" label="I currently work here" /></div>
-              </div>
-            </UCard>
-          </div>
-          <UButton block label="Add New Experience" icon="i-heroicons-plus" color="gray" variant="dashed" class="py-4" @click="store.addExperience" />
-          <div class="flex justify-between mt-8"><UButton color="white" icon="i-heroicons-arrow-left" @click="store.activeTabIndex--">Back</UButton><UButton @click="nextStep">Continue</UButton></div>
-        </div>
-      </template>
-
-      <template #education>
-        <div class="mt-6 space-y-6">
-          <div v-for="(edu, index) in store.education" :key="index">
-            <UCard class="shadow-sm border-gray-200">
-              <template #header>
-                <div class="flex justify-between items-center">
-                  <span class="font-bold text-primary">Education #{{ index + 1 }}</span>
-                  <UButton v-if="store.education.length > 1" color="red" variant="soft" icon="i-heroicons-trash" @click="store.removeEducation(index)" />
-                </div>
-              </template>
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
-                <UFormGroup label="School/University Name" class="md:col-span-4"><UInput v-model="edu.institution" size="lg" /></UFormGroup>
-                <UFormGroup label="Location" class="md:col-span-2"><UInput v-model="edu.location" size="lg" /></UFormGroup>
-                <UFormGroup label="Field of Study" class="md:col-span-3"><UInput v-model="edu.field" size="lg" /></UFormGroup>
-                <UFormGroup label="Marks / CGPA" class="md:col-span-3"><UInput v-model="edu.marks" size="lg" /></UFormGroup>
-                <UFormGroup label="Start Date" class="md:col-span-3"><UInput type="month" v-model="edu.startDate" size="lg" /></UFormGroup>
-                <UFormGroup label="End Date" class="md:col-span-3"><UInput type="month" v-model="edu.endDate" size="lg" /></UFormGroup>
-              </div>
-            </UCard>
-          </div>
-          <UButton block label="Add Education" icon="i-heroicons-plus" color="gray" variant="dashed" class="py-4" @click="store.addEducation" />
-          <div class="flex justify-between mt-8"><UButton color="white" @click="store.activeTabIndex--">Back</UButton><UButton @click="nextStep">Continue</UButton></div>
-        </div>
-      </template>
-
-      <template #projects>
-        <div class="mt-6 space-y-6">
-          <div v-for="(project, index) in store.projects" :key="index">
-            <UCard class="shadow-sm border-gray-200">
-              <template #header>
-                <div class="flex justify-between items-center">
-                  <span class="font-bold text-primary">Project #{{ index + 1 }}</span>
-                  <UButton v-if="store.projects.length > 1" color="red" variant="soft" icon="i-heroicons-trash" @click="store.removeProject(index)" />
-                </div>
-              </template>
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
-                <UFormGroup label="Project Name" class="md:col-span-3"><UInput v-model="project.name" size="lg" /></UFormGroup>
-                <UFormGroup label="Company/Platform" class="md:col-span-3" help="Where you built this"><UInput v-model="project.company" size="lg" /></UFormGroup>
-                <UFormGroup label="Start Date" class="md:col-span-3"><UInput type="month" v-model="project.startDate" size="lg" /></UFormGroup>
-                <UFormGroup label="End Date" class="md:col-span-3"><UInput type="month" v-model="project.endDate" size="lg" /></UFormGroup>
-                <UFormGroup label="Tech Stack" class="md:col-span-6"><UInput v-model="project.techStack" placeholder="Nuxt 3, Tailwind CSS, MySQL" size="lg" /></UFormGroup>
-                <UFormGroup label="Project Description" class="md:col-span-6"><UTextarea v-model="project.description" :rows="3" /></UFormGroup>
-              </div>
-            </UCard>
-          </div>
-          <UButton block label="Add Project" icon="i-heroicons-plus" color="gray" variant="dashed" class="py-4" @click="store.addProject" />
-          <div class="flex justify-between mt-8"><UButton color="white" @click="store.activeTabIndex--">Back</UButton><UButton @click="nextStep">Continue</UButton></div>
-        </div>
-      </template>
-
-      <template #skills>
-        <UCard class="mt-6 shadow-sm border-gray-200">
-          <div class="space-y-6">
-            <UFormGroup label="Expertise & Skills" help="Type a skill (e.g., JavaScript) and press Add or Enter">
-              <div class="flex gap-2">
-                <UInput v-model="newSkill" class="flex-1" placeholder="e.g. Nuxt.js" size="lg" @keyup.enter="addSkill" />
-                <UButton size="lg" icon="i-heroicons-plus" @click="addSkill">Add</UButton>
-              </div>
-            </UFormGroup>
-            
-            <div class="flex flex-wrap gap-3 mt-4 min-h-[120px] p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300">
-              <UBadge v-for="(skill, i) in store.skills" :key="i" size="lg" class="px-4 py-2 flex items-center gap-2">
-                {{ skill }}
-                <UIcon name="i-heroicons-x-mark" class="cursor-pointer hover:text-red-300" @click="store.skills.splice(i, 1)" />
-              </UBadge>
-              <p v-if="store.skills.length === 0" class="text-gray-400 text-sm italic w-full text-center">No skills added yet. Start typing above!</p>
-            </div>
-
-            <div class="flex justify-between mt-8 pt-6 border-t">
-              <UButton color="white" size="lg" @click="store.activeTabIndex--">Back</UButton>
-              <UButton color="primary" size="xl" class="px-12 font-bold shadow-lg">Generate Final Resume</UButton>
-            </div>
-          </div>
-        </UCard>
-      </template>
-
-    </UTabs>
-  </div>
-</template>
-
-

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useResumeStore = defineStore('resume', {
   state: () => ({
-    activeTabIndex: 0,
+    activeTabIndex: 1,
     unlockedTabs: [0],
     personalInfo: {
       fullName: '',
@@ -14,17 +14,15 @@ export const useResumeStore = defineStore('resume', {
       jobTitle: '',
       aboutMe: ''
     },
-    experience: [
-      { company: '', role: '', startDate: '', endDate: '', location: '', description: '', isCurrent: false }
-    ],
-    education: [
-      { institution: '', field: '', startDate: '', endDate: '', marks: '', location: '' }
-    ],
-    projects: [
-      { name: '', startDate: '', endDate: '', company: '', techStack: '', description: '' }
-    ],
+   education: [],
+experience: [],
+projects: [],
+     
+    
     skills: [] 
   }),
+
+  
   actions: {
     addExperience() { 
       this.experience.push({ company: '', role: '', startDate: '', endDate: '', location: '', description: '', isCurrent: false }) 
@@ -34,14 +32,14 @@ export const useResumeStore = defineStore('resume', {
     },
     
     addEducation() { 
-      this.education.push({ institution: '', field: '', startDate: '', endDate: '', marks: '', location: '' }) 
+      this.education.push({ institution: '', field: '', startDate: '', endDate: '', marks: '', location: '', isCurrent: false }) 
     },
     removeEducation(index) { 
       if (this.education.length > 1) this.education.splice(index, 1) 
     },
 
     addProject() { 
-      this.projects.push({ name: '', startDate: '', endDate: '', company: '', techStack: '', description: '' }) 
+      this.projects.push({ name: '', startDate: '', endDate: '', company: '', techStack: '', description: '', isCurrent: false }) 
     },
     removeProject(index) { 
       if (this.projects.length > 1) this.projects.splice(index, 1) 
