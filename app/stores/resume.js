@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useResumeStore = defineStore('resume', {
   state: () => ({
-    activeTabIndex: 1,
+    activeTabIndex: 0,
     unlockedTabs: [0],
     personalInfo: {
       fullName: '',
