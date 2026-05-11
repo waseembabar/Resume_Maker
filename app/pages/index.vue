@@ -1,10 +1,28 @@
 <script setup lang="ts">
 import { useResumeStore } from '../stores/resume.js'
 import { useAuthStore } from '../stores/auth.js'
+
 const userStore = useAuthStore()
+const toast = useToast()
 
 const store = useResumeStore()
 const newSkill = ref('')
+const isAutoSaving = ref(false)
+const showTemplateModal = ref(false)
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+const templateCards = [
+  { id: 'template-1', label: 'Split-Pane (Left)', desc: 'Left heavy sidebar, right experience column.' },
+  { id: 'template-2', label: 'Split-Pane (Right)', desc: 'Right heavy sidebar, left experience focus.' },
+  { id: 'template-3', label: 'Minimalist Grid (Swiss A)', desc: 'Whitespace-first grid with strong dividers.' },
+  { id: 'template-4', label: 'Minimalist Grid (Swiss B)', desc: 'Swiss style with alternate hierarchy.' },
+  { id: 'template-5', label: 'Asymmetric Creative A', desc: 'Offset sections with unconventional flow.' },
+  { id: 'template-6', label: 'Asymmetric Creative B', desc: 'Asymmetric columns and reordered blocks.' },
+  { id: 'template-7', label: 'Executive T-Shape A', desc: 'Full-width top summary + balanced columns.' },
+  { id: 'template-8', label: 'Executive T-Shape B', desc: 'Dense executive structure with top panel.' },
+  { id: 'template-9', label: 'Editorial Timeline', desc: 'Timeline-driven experience hierarchy.' },
+  { id: 'template-10', label: 'Modular Cards', desc: 'Card-based modular information grouping.' }
+]
 
 const steps = [
   'personal',
@@ -64,27 +82,89 @@ const addSkill = () => {
   }
 }
 
+function handleProfileImageUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) {
+    return
+  }
+  if (!file.type.startsWith('image/')) {
+    toast.add({ title: 'Invalid file', description: 'Please upload an image file.', color: 'red' })
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    store.personalInfo.profileImage = String(reader.result || '')
+  }
+  reader.readAsDataURL(file)
+}
+
+function selectTemplateFromModal(templateId: string) {
+  store.selectedTemplateId = templateId
+}
+
+const resumePayload = computed(() => ({
+  personalInfo: store.personalInfo,
+  education: store.education,
+  experience: store.experience,
+  skills: store.skills,
+  projects: store.projects
+}))
+
+function exportAsPdf() {
+  if (!import.meta.client) {
+    return
+  }
+  window.print()
+}
+
+async function autoSaveResume(showToast = false) {
+  if (!userStore.user?.id) {
+    return
+  }
+  isAutoSaving.value = true
+  const ok = await store.saveResumeData(userStore.user.id)
+  isAutoSaving.value = false
+  if (showToast && ok) {
+    toast.add({ title: 'Saved', description: 'Resume auto-saved successfully.' })
+  }
+}
+
+watch(
+  () => [store.personalInfo, store.experience, store.education, store.projects, store.skills, store.selectedTemplateId],
+  () => {
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer)
+    }
+    autoSaveTimer = setTimeout(() => {
+      autoSaveResume()
+    }, 1000)
+  },
+  { deep: true }
+)
+
 async function generateResume() {
   try {
     const response = await $fetch('/api/resume/save', {
       method: 'POST',
       body: {
-        userId: userStore.user.id,
+        userId: userStore.user?.id ?? 1,
+        resumeId: store.resumeId,
         title: 'My Professional Resume',
         content: {
-          personalDetails: resumeStore.personalDetails,
-          education: resumeStore.education,
-          experience: resumeStore.experience,
-          skills: resumeStore.skills,
-          projects: resumeStore.projects
+          ...resumePayload.value,
+          templateId: store.selectedTemplateId
         }
       }
     })
     
-    // Show success message using Nuxt UI Toast
-    useToast().add({ title: 'Success', description: response.message })
-  } catch (error) {
-    useToast().add({ title: 'Error', description: error.statusMessage, color: 'red' })
+    if (response?.resume?.id) {
+      store.resumeId = response.resume.id
+    }
+    toast.add({ title: 'Success', description: response.message || 'Resume generated successfully.' })
+  } catch (error: any) {
+    toast.add({ title: 'Error', description: error?.statusMessage || error?.data?.statusMessage || 'Unable to generate resume.', color: 'red' })
   }
 }
 </script>
@@ -101,7 +181,33 @@ async function generateResume() {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
       <!-- LEFT SIDE -->
-      <div class="w-full">
+      <div class="w-full relative">
+        <div
+          v-if="showTemplateModal"
+          class="absolute top-0 left-0 right-0 z-40"
+        >
+          <div class="rounded-2xl border bg-white dark:bg-gray-900 shadow-2xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold">Choose Resume Template</h3>
+              <UButton size="xs" color="gray" variant="soft" @click="showTemplateModal = false">
+                Close
+              </UButton>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[420px] overflow-auto pr-1">
+              <button
+                v-for="card in templateCards"
+                :key="card.id"
+                type="button"
+                class="text-left rounded-xl border p-3 transition hover:shadow"
+                :class="store.selectedTemplateId === card.id ? 'ring-2 ring-primary-500 border-primary-400' : 'border-gray-200 dark:border-gray-700'"
+                @click="selectTemplateFromModal(card.id)"
+              >
+                <p class="font-semibold text-sm">{{ card.label }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ card.desc }}</p>
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- STEP PROGRESS -->
         <div class="mb-6">
@@ -170,6 +276,22 @@ async function generateResume() {
                 </div>
 
                 <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <UFormGroup label="Profile Image" class="md:col-span-2">
+                    <div class="flex items-center gap-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-primary-500"
+                        @change="handleProfileImageUpload"
+                      >
+                      <img
+                        v-if="store.personalInfo.profileImage"
+                        :src="store.personalInfo.profileImage"
+                        alt="Profile Preview"
+                        class="h-14 w-14 rounded-full object-cover border"
+                      >
+                    </div>
+                  </UFormGroup>
 
                   <UFormGroup label="Full Name">
                     <UInput v-model="store.personalInfo.fullName" size="xl" placeholder="Waseem Babar"
@@ -382,10 +504,9 @@ async function generateResume() {
 
           <div class="flex justify-between mt-6">
             <UButton @click="prevStep">Back</UButton>
-            < <UButton :loading="isSaving" @click="nextStep">
+            <UButton :loading="isSaving" @click="nextStep">
               {{ store.activeTabIndex === steps.length - 1 ? 'Finish' : 'Continue' }}
-              </UButton>
-
+            </UButton>
           </div>
         </div>
 
@@ -631,9 +752,14 @@ async function generateResume() {
 
               <div class="flex justify-between mt-8 pt-6 border-t">
                 <UButton color="white" size="lg" @click="store.activeTabIndex--">Back</UButton>
-                <UButton color="primary" size="xl" class="px-12 font-bold shadow-lg" @click="generateResume">
-                  Generate Final Resume
-                </UButton>
+                <div class="flex gap-2">
+                  <UButton color="gray" variant="soft" size="lg" @click="exportAsPdf">
+                    Export PDF
+                  </UButton>
+                  <UButton color="primary" size="xl" class="px-12 font-bold shadow-lg" @click="generateResume">
+                    Generate Final Resume
+                  </UButton>
+                </div>
               </div>
             </div>
           </UCard>
@@ -642,48 +768,30 @@ async function generateResume() {
 
       </div>
 
-      <!-- RIGHT SIDE (UNCHANGED PREVIEW) -->
+      <!-- RIGHT SIDE PREVIEW -->
       <div
         class="sticky top-6 h-[calc(100vh-3rem)] overflow-auto bg-white dark:bg-gray-900 border rounded-2xl p-6 shadow-lg">
-
-        <div class="text-center border-b pb-4" v-if="store.personalInfo?.fullName">
-          <h2 class="text-2xl font-bold">{{ store.personalInfo.fullName }}</h2>
-          <p class="text-gray-500">{{ store.personalInfo.jobTitle }}</p>
-        </div>
-
-        <div class="mt-4" v-if="store.personalInfo.aboutMe">
-          <h3 class="font-bold">About</h3>
-          <p class="text-sm text-gray-600">{{ store.personalInfo.aboutMe }}</p>
-        </div>
-
-        <div class="mt-4" v-if="store.experience.length">
-          <h3 class="font-bold">Experience</h3>
-          <div v-for="e in store.experience" class="text-sm mt-2">
-            <p>{{ e.role }} - {{ e.company }}</p>
+        <div class="flex flex-wrap justify-between gap-2 mb-3">
+          <UBadge :color="isAutoSaving ? 'amber' : 'green'" variant="soft">
+            {{ isAutoSaving ? 'Auto-saving...' : 'Auto-save enabled' }}
+          </UBadge>
+          <div class="flex gap-2">
+            <UButton to="/resumes" size="xs" variant="soft" color="primary">
+              My Resumes
+            </UButton>
+            <UButton size="xs" variant="soft" color="gray" @click="autoSaveResume(true)">
+              Save Now
+            </UButton>
           </div>
         </div>
-
-        <div class="mt-4" v-if="store.education.length">
-          <h3 class="font-bold">Education</h3>
-          <div v-for="e in store.education" class="text-sm mt-2">
-            <p>{{ e.institution }}</p>
-          </div>
-        </div>
-
-        <div class="mt-4" v-if="store.projects.length">
-          <h3 class="font-bold">Projects</h3>
-          <div v-for="p in store.projects" class="text-sm mt-2">
-            <p>{{ p.name }}</p>
-          </div>
-        </div>
-
-        <div class="mt-4" v-if="store.skills.length">
-          <h3 class="font-bold">Skills</h3>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <UBadge v-for="s in store.skills" :key="s">{{ s }}</UBadge>
-          </div>
-        </div>
-
+        <ResumeTemplateSelector
+          v-model="store.selectedTemplateId"
+          @view-all="showTemplateModal = true"
+        />
+        <ResumeLivePreview
+          :template-id="store.selectedTemplateId"
+          :resume="resumePayload"
+        />
       </div>
 
     </div>

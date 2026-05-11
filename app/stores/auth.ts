@@ -1,6 +1,6 @@
 // stores/auth.ts
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(null) as Ref<{ name: string, email: string } | null>
+  const user = ref(null) as Ref<{ id?: number, name: string, email: string, status?: string } | null>
 
   const isLoggedIn = computed(() => !!user.value)
 

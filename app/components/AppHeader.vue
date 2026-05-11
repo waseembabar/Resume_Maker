@@ -35,8 +35,14 @@ const items = [
 
       <!-- Show this if Logged In -->
       <div v-else class="flex items-center gap-3">
-       
-        
+        <UButton
+          label="My Resumes"
+          color="primary"
+          variant="soft"
+          to="/resumes"
+          size="sm"
+        />
+
         <UDropdown :items="items" :popper="{ placement: 'bottom-end' }">
           <UAvatar
             :alt="auth.user?.name"
