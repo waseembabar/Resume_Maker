@@ -1,90 +1,75 @@
 <script setup lang="ts">
 import * as z from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
+import type { FormSubmitEvent } from '#ui/types'
+const auth = useAuthStore()
 
-definePageMeta({
-  layout: 'auth'
-})
-
-useSeoMeta({
-  title: 'Login',
-  description: 'Login to your account to continue'
-})
+definePageMeta({ layout: 'auth' })
 
 const toast = useToast()
+const loading = ref(false)
 
-const fields = [{
-  name: 'email',
-  type: 'text' as const,
-  label: 'Email',
-  placeholder: 'Enter your email',
-  required: true
-}, {
-  name: 'password',
-  label: 'Password',
-  type: 'password' as const,
-  placeholder: 'Enter your password'
-}, {
-  name: 'remember',
-  label: 'Remember me',
-  type: 'checkbox' as const
-}]
-
-const providers = [{
-  label: 'Google',
-  icon: 'i-simple-icons-google',
-  onClick: () => {
-    toast.add({ title: 'Google', description: 'Login with Google' })
-  }
-}, {
-  label: 'GitHub',
-  icon: 'i-simple-icons-github',
-  onClick: () => {
-    toast.add({ title: 'GitHub', description: 'Login with GitHub' })
-  }
-}]
+const fields = [
+  { name: 'email', type: 'email', label: 'Email', placeholder: 'you@example.com', icon: 'i-heroicons-envelope' },
+  { name: 'password', type: 'password', label: 'Password', placeholder: '••••••••', icon: 'i-heroicons-lock-closed' }
+]
 
 const schema = z.object({
-  email: z.email('Invalid email'),
-  password: z.string().min(8, 'Must be at least 8 characters')
+  email: z.string().email('Invalid email'),
+  password: z.string().min(8, 'Must be 8+ characters')
 })
 
-type Schema = z.output<typeof schema>
-
-function onSubmit(payload: FormSubmitEvent<Schema>) {
-  console.log('Submitted', payload)
+async function onSubmit(payload: FormSubmitEvent<z.output<typeof schema>>) {
+  loading.value = true
+  try {
+    const data = await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: payload.data
+    })
+    toast.add({ title: 'Success', description: 'Welcome back!', color: 'green' })
+    auth.setUser(data)
+    navigateTo('/')
+  } catch (err: any) {
+    toast.add({ title: 'Error', description: err.data?.message || 'Login failed', color: 'red' })
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
-  <UAuthForm
-    :fields="fields"
-    :schema="schema"
-    :providers="providers"
-    title="Welcome back"
-    icon="i-lucide-lock"
-    @submit="onSubmit"
-  >
-    <template #description>
-      Don't have an account? <ULink
-        to="/signup"
-        class="text-primary font-medium"
-      >Sign up</ULink>.
-    </template>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-900 dark:to-black px-4">
+    <UCard class="w-full max-w-md border-t-4 border-primary">
+      <template #header>
+        <div class="text-center">
+          <UIcon name="i-heroicons-pencil-square" class="w-10 h-10 text-primary mx-auto mb-2" />
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Resume Maker</h1>
+          <p class="text-sm text-gray-500">Sign in to manage your professional profile</p>
+        </div>
+      </template>
 
-    <template #password-hint>
-      <ULink
-        to="/"
-        class="text-primary font-medium"
-        tabindex="-1"
-      >Forgot password?</ULink>
-    </template>
+      <UAuthForm
+        :fields="fields"
+        :schema="schema"
+        :loading="loading"
+        @submit="onSubmit"
+        align="bottom"
+        title=""
+      >
+        <template #description>
+          New here? <ULink to="/signup" class="text-primary hover:underline">Create an account</ULink>
+        </template>
+        
+        <template #password-hint>
+          <ULink to="/forgot" class="text-xs text-primary">Forgot password?</ULink>
+        </template>
+      </UAuthForm>
 
-    <template #footer>
-      By signing in, you agree to our <ULink
-        to="/"
-        class="text-primary font-medium"
-      >Terms of Service</ULink>.
-    </template>
-  </UAuthForm>
+      <template #footer>
+        <div class="flex items-center justify-center gap-2 text-xs text-gray-400">
+          <UIcon name="i-heroicons-shield-check" />
+          Secure Enterprise Authentication
+        </div>
+      </template>
+    </UCard>
+  </div>
 </template>

@@ -1,48 +1,42 @@
+// stores/resume.js
 import { defineStore } from 'pinia'
 
 export const useResumeStore = defineStore('resume', {
   state: () => ({
     activeTabIndex: 0,
-    unlockedTabs: [0],
-    personalInfo: {
-      fullName: '',
-      email: '',
-      phone: '',
-      github: '',
-      portfolio: '',
-      location: '',
-      jobTitle: '',
-      aboutMe: ''
-    },
-   education: [],
-experience: [],
-projects: [],
-     
-    
-    skills: [] 
+    personalInfo: {},
+    experience: [],
+    education: [],
+    projects: [],
+    skills: [],
+    resumeId: null // Store the ID after first save to update the same record
   }),
-
   
   actions: {
-    addExperience() { 
-      this.experience.push({ company: '', role: '', startDate: '', endDate: '', location: '', description: '', isCurrent: false }) 
-    },
-    removeExperience(index) { 
-      if (this.experience.length > 1) this.experience.splice(index, 1) 
-    },
-    
-    addEducation() { 
-      this.education.push({ institution: '', field: '', startDate: '', endDate: '', marks: '', location: '', isCurrent: false }) 
-    },
-    removeEducation(index) { 
-      if (this.education.length > 1) this.education.splice(index, 1) 
-    },
-
-    addProject() { 
-      this.projects.push({ name: '', startDate: '', endDate: '', company: '', techStack: '', description: '', isCurrent: false }) 
-    },
-    removeProject(index) { 
-      if (this.projects.length > 1) this.projects.splice(index, 1) 
+    async saveResumeData() {
+      try {
+        // Example using $fetch (Nuxt 3) or your preferred API client
+        const response = await $fetch('/api/resume/save', {
+          method: 'POST',
+          body: {
+            // Send the entire state or specific sections
+            resumeId: this.resumeId,
+            personalInfo: this.personalInfo,
+            experience: this.experience,
+            education: this.education,
+            projects: this.projects,
+            skills: this.skills
+          }
+        })
+        
+        if (response.id) {
+          this.resumeId = response.id // Save ID for subsequent step updates
+        }
+        return true
+      } catch (error) {
+        console.error('Failed to save step:', error)
+        return false
+      }
     }
   }
 })

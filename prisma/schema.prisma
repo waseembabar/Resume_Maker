@@ -1,0 +1,33 @@
+// prisma/schema.prisma
+
+// 1. Tell Prisma to generate the JS Client
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 2. Tell Prisma to connect to your MySQL (XAMPP)
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 3. Your User Model
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   
+  email     String   @unique
+  password  String
+  status    String   @default("LoggedIn") 
+  resumes   Resume[] // Keeps the relationship to resumes
+  createdAt DateTime @default(now())
+}
+
+// 4. Your Resume Model (Keep this so you can save resumes later!)
+model Resume {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   Json     
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
