@@ -33,7 +33,7 @@ const selectedTemplate = computed({
     <div class="flex gap-2">
       <select
         v-model="selectedTemplate"
-        class="w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+        class="w-80 rounded-lg border border-gray-300 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
       >
         <option
           v-for="item in templates"
@@ -43,14 +43,8 @@ const selectedTemplate = computed({
           {{ item.label }}
         </option>
       </select>
-      <UButton
-        size="sm"
-        variant="soft"
-        color="primary"
-        @click="emit('view-all')"
-      >
-        View all
-      </UButton>
+     
+      <UButton color="neutral"  @click="emit('view-all')"> View all Template</UButton>
     </div>
   </div>
 </template>

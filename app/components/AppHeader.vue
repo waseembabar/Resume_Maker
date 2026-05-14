@@ -16,6 +16,8 @@ const items = [
 </script>
 
 <template>
+
+   {{ auth.loading ? 'Loading...' : '' }}
   <UHeader :toggle="false">
     <template #left>
       <NuxtLink to="/">
@@ -25,6 +27,7 @@ const items = [
 
     <template #right>
       <!-- Show this if NOT logged in -->
+      
       <UButton
         v-if="!auth.isLoggedIn"
         label="Login"

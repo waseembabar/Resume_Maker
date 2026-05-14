@@ -33,26 +33,6 @@ const steps = [
 ]
 
 const isSaving = ref(false)
-
-// async function nextStep() {
-//   // Only attempt to save if the user is logged in (check your auth store)
-//   // if (!authStore.isLoggedIn) return next()
-
-//   isSaving.value = true
-
-//   const success = await store.saveResumeData()
-
-//   if (success) {
-//     if (store.activeTabIndex < steps.length - 1) {
-//       store.activeTabIndex++
-//     }
-//   } else {
-//     // Optional: Use Nuxt UI Toast to show error
-//     // toast.add({ title: 'Error saving data', color: 'red' })
-//   }
-
-//   isSaving.value = false
-// }
 function nextStep() {
 
   if (store.activeTabIndex < steps.length - 1) {
@@ -171,6 +151,7 @@ async function generateResume() {
 
 <template>
   <div class="w-full mx-auto px-4 py-6">
+   {{ userStore.loading  }}
 
     <!-- HEADER -->
     <div class="text-center mb-6">
@@ -590,7 +571,16 @@ async function generateResume() {
                       <UCheckbox v-model="edu.isCurrent" label="Currently Studying" />
                     </div>
                   </UFormField>
+
+
                 </div>
+                <div class="w-full pt-5">
+                  <UFormField label="Description" class="w-full">
+               <UTextarea v-model="edu.description" :rows="10" class="w-full"
+                 placeholder="Describe your educational..." />
+                 </UFormField>
+
+             </div>
 
               </UCard>
 
@@ -775,14 +765,7 @@ async function generateResume() {
           <UBadge :color="isAutoSaving ? 'amber' : 'green'" variant="soft">
             {{ isAutoSaving ? 'Auto-saving...' : 'Auto-save enabled' }}
           </UBadge>
-          <div class="flex gap-2">
-            <UButton to="/resumes" size="xs" variant="soft" color="primary">
-              My Resumes
-            </UButton>
-            <UButton size="xs" variant="soft" color="gray" @click="autoSaveResume(true)">
-              Save Now
-            </UButton>
-          </div>
+          
         </div>
         <ResumeTemplateSelector
           v-model="store.selectedTemplateId"

@@ -32,6 +32,14 @@ export default defineEventHandler(async (event) => {
     }
 
     // 3. Success: Return user data (Exclude password for security)
+       // 3. Success: Set userId cookie and return user data
+    setCookie(event, 'userId', user.id.toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
+
     return {
       id: user.id,
       name: user.name,

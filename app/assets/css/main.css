@@ -30,3 +30,7 @@
 .u-header-button {
   display: none !important;
 }
+
+:root {
+  color-scheme: light;
+}
