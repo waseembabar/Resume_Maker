@@ -34,3 +34,14 @@
 :root {
   color-scheme: light;
 }
+
+/* Print styles for PDF generation */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  .rounded-2xl {
+    border-radius: 0;
+  }
+}

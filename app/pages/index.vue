@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useResumeStore } from '../stores/resume.js'
 import { useAuthStore } from '../stores/auth.js'
+import { nextTick, ref } from 'vue'
 
 const userStore = useAuthStore()
 const toast = useToast()
@@ -9,6 +10,7 @@ const store = useResumeStore()
 const newSkill = ref('')
 const isAutoSaving = ref(false)
 const showTemplateModal = ref(false)
+const previewRef = ref<HTMLElement | null>(null)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 const templateCards = [
@@ -21,7 +23,17 @@ const templateCards = [
   { id: 'template-7', label: 'Executive T-Shape A', desc: 'Full-width top summary + balanced columns.' },
   { id: 'template-8', label: 'Executive T-Shape B', desc: 'Dense executive structure with top panel.' },
   { id: 'template-9', label: 'Editorial Timeline', desc: 'Timeline-driven experience hierarchy.' },
-  { id: 'template-10', label: 'Modular Cards', desc: 'Card-based modular information grouping.' }
+  { id: 'template-10', label: 'Modular Cards', desc: 'Card-based modular information grouping.' },
+  { id: 'template-11', label: 'Gradient Sidebar', desc: 'Blue gradient sidebar with timeline experience.' },
+  { id: 'template-12', label: 'Centered Cards', desc: 'Centered header with card-based sections.' },
+  { id: 'template-13', label: 'Dark Header', desc: 'Dark header with full-width sections.' },
+  { id: 'template-14', label: 'Vertical Timeline', desc: 'Timeline layout for experience and education.' },
+  { id: 'template-15', label: 'Creative Overlap', desc: 'Gradient header with overlapping sections.' },
+  { id: 'template-16', label: 'Two-Column Simple', desc: 'Simple two-column layout with sidebar.' },
+  { id: 'template-17', label: 'Colorful Cards', desc: 'Colored card sections for different areas.' },
+  { id: 'template-18', label: 'Minimalist Underlines', desc: 'Clean layout with underlined section headers.' },
+  { id: 'template-19', label: 'Bold Executive', desc: 'Bold black styling for executive resumes.' },
+  { id: 'template-20', label: 'Playful Colors', desc: 'Colorful gradient background with playful design.' }
 ]
 
 const steps = [
@@ -33,6 +45,7 @@ const steps = [
 ]
 
 const isSaving = ref(false)
+const isDownloading = ref(false)
 function nextStep() {
 
   if (store.activeTabIndex < steps.length - 1) {
@@ -92,11 +105,11 @@ const resumePayload = computed(() => ({
   projects: store.projects
 }))
 
-function exportAsPdf() {
+async function exportAsPdf() {
   if (!import.meta.client) {
     return
   }
-  window.print()
+  await downloadResume()
 }
 
 async function autoSaveResume(showToast = false) {
@@ -125,7 +138,10 @@ watch(
 )
 
 async function generateResume() {
+  let saveSuccess = false
+
   try {
+    isDownloading.value = true
     const response = await $fetch('/api/resume/save', {
       method: 'POST',
       body: {
@@ -138,20 +154,272 @@ async function generateResume() {
         }
       }
     })
-    
+
     if (response?.resume?.id) {
       store.resumeId = response.resume.id
     }
+
+    saveSuccess = true
     toast.add({ title: 'Success', description: response.message || 'Resume generated successfully.' })
   } catch (error: any) {
+    console.error('Resume save error:', error)
     toast.add({ title: 'Error', description: error?.statusMessage || error?.data?.statusMessage || 'Unable to generate resume.', color: 'red' })
+  } finally {
+    isDownloading.value = false
   }
+
+  if (!saveSuccess) {
+    return
+  }
+
+  try {
+    await nextTick()
+    await downloadResume()
+  } catch (error: any) {
+    console.error('Resume download error:', error)
+    toast.add({ title: 'Download failed', description: error?.message || 'Unable to download resume PDF.', color: 'red' })
+  }
+}
+
+async function downloadResume() {
+  if (!import.meta.client) {
+    toast.add({ title: 'Error', description: 'Resume download is only available in the browser.', color: 'red' })
+    return
+  }
+
+  if (!previewRef.value) {
+    toast.add({ title: 'Error', description: 'Preview not ready for download.', color: 'red' })
+    return
+  }
+
+  const html2canvasModule = await import('html2canvas')
+  const html2canvas = html2canvasModule.default || html2canvasModule
+  const jsPDFModule = await import('jspdf')
+  const { jsPDF } = jsPDFModule
+
+  const parseOklab = (value: string) => {
+    const match = value.trim().match(/^oklab\(\s*([\d.]+%?)\s+([+-]?[\d.]+)\s+([+-]?[\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/i)
+    if (!match) {
+      return null
+    }
+
+    const parseNumeric = (token: string) => {
+      if (token.endsWith('%')) {
+        return parseFloat(token) / 100
+      }
+      return parseFloat(token)
+    }
+
+    let L = parseNumeric(match[1])
+    const a = parseNumeric(match[2])
+    const b = parseNumeric(match[3])
+    let alpha = 1
+
+    if (match[4]) {
+      alpha = match[4].endsWith('%') ? parseFloat(match[4]) / 100 : parseFloat(match[4])
+    }
+
+    if (match[1].endsWith('%')) {
+      L = L * 100
+    }
+
+    const l_ = L + 0.3963377774 * a + 0.2158037573 * b
+    const m_ = L - 0.1055613458 * a - 0.0638541728 * b
+    const s_ = L - 0.0894841775 * a - 1.2914855480 * b
+
+    const l = l_ * l_ * l_
+    const m = m_ * m_ * m_
+    const s = s_ * s_ * s_
+
+    const rLin = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    const gLin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    const bLin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+    const toSRGB = (value: number) => {
+      const v = Math.max(0, Math.min(1, value))
+      return v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055
+    }
+
+    const red = Math.round(toSRGB(rLin) * 255)
+    const green = Math.round(toSRGB(gLin) * 255)
+    const blue = Math.round(toSRGB(bLin) * 255)
+
+    return alpha < 1
+      ? `rgba(${red}, ${green}, ${blue}, ${alpha})`
+      : `rgb(${red}, ${green}, ${blue})`
+  }
+
+  const parseOklch = (value: string) => {
+    const match = value.trim().match(/^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/i)
+    if (!match) {
+      return null
+    }
+
+    const parseNumeric = (token: string) => {
+      if (token.endsWith('%')) {
+        return parseFloat(token) / 100
+      }
+      return parseFloat(token)
+    }
+
+    let L = parseNumeric(match[1])
+    const C = parseNumeric(match[2])
+    const h = parseFloat(match[3]) * (Math.PI / 180)
+    let alpha = 1
+
+    if (match[4]) {
+      alpha = match[4].endsWith('%') ? parseFloat(match[4]) / 100 : parseFloat(match[4])
+    }
+
+    if (match[1].endsWith('%')) {
+      L = L * 100
+    }
+
+    const a = C * Math.cos(h)
+    const b = C * Math.sin(h)
+
+    const l_ = L + 0.3963377774 * a + 0.2158037573 * b
+    const m_ = L - 0.1055613458 * a - 0.0638541728 * b
+    const s_ = L - 0.0894841775 * a - 1.2914855480 * b
+
+    const l = l_ * l_ * l_
+    const m = m_ * m_ * m_
+    const s = s_ * s_ * s_
+
+    const rLin = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    const gLin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    const bLin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+    const toSRGB = (value: number) => {
+      const v = Math.max(0, Math.min(1, value))
+      return v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055
+    }
+
+    const red = Math.round(toSRGB(rLin) * 255)
+    const green = Math.round(toSRGB(gLin) * 255)
+    const blue = Math.round(toSRGB(bLin) * 255)
+
+    return alpha < 1
+      ? `rgba(${red}, ${green}, ${blue}, ${alpha})`
+      : `rgb(${red}, ${green}, ${blue})`
+  }
+
+  const normalizeColor = (value: string) => {
+    const oklab = parseOklab(value)
+    if (oklab) {
+      return oklab
+    }
+
+    const oklch = parseOklch(value)
+    if (oklch) {
+      return oklch
+    }
+
+    const temp = document.createElement('div')
+    temp.style.color = value
+    temp.style.position = 'fixed'
+    temp.style.left = '-9999px'
+    document.body.appendChild(temp)
+    const computed = getComputedStyle(temp).color
+    document.body.removeChild(temp)
+    return computed || value
+  }
+
+  const normalizeStyles = (root: HTMLElement) => {
+    const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]
+    const colorProperties = [
+      'color',
+      'backgroundColor',
+      'borderColor',
+      'borderTopColor',
+      'borderRightColor',
+      'borderBottomColor',
+      'borderLeftColor',
+      'outlineColor',
+      'fill',
+      'stroke'
+    ]
+
+    elements.forEach(el => {
+      const style = getComputedStyle(el)
+      colorProperties.forEach(prop => {
+        const value = (style as any)[prop]
+        if (value) {
+          const normalized = normalizeColor(value)
+          el.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), normalized, 'important')
+        }
+      })
+      el.style.setProperty('box-shadow', 'none', 'important')
+      el.style.setProperty('text-shadow', 'none', 'important')
+      el.style.setProperty('background-image', 'none', 'important')
+    })
+  }
+
+  const canvas = await html2canvas(previewRef.value, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    onclone: (clonedDoc: Document) => {
+      const cloneRoot = clonedDoc.getElementById('resume-pdf-container') as HTMLElement | null
+      if (cloneRoot) {
+        clonedDoc.body.style.backgroundColor = '#ffffff'
+        normalizeStyles(cloneRoot)
+      }
+    }
+  })
+
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' })
+  const pageWidth = pdf.internal.pageSize.getWidth()
+  const pageHeight = pdf.internal.pageSize.getHeight()
+  const margin = 20
+  const contentWidth = pageWidth - margin * 2
+  const contentHeight = pageHeight - margin * 2
+  const sliceHeight = Math.floor((canvas.height * contentHeight) / canvas.width)
+
+  let pageIndex = 0
+  let sourceY = 0
+
+  while (sourceY < canvas.height) {
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvas.width
+    pageCanvas.height = Math.min(sliceHeight, canvas.height - sourceY)
+
+    const pageCtx = pageCanvas.getContext('2d')
+    if (!pageCtx) {
+      break
+    }
+
+    pageCtx.drawImage(
+      canvas,
+      0,
+      sourceY,
+      canvas.width,
+      pageCanvas.height,
+      0,
+      0,
+      canvas.width,
+      pageCanvas.height
+    )
+
+    const pageData = pageCanvas.toDataURL('image/jpeg', 0.95)
+    const pageImageHeight = (pageCanvas.height * contentWidth) / canvas.width
+
+    if (pageIndex > 0) {
+      pdf.addPage()
+    }
+
+    pdf.addImage(pageData, 'JPEG', margin, margin, contentWidth, pageImageHeight)
+
+    sourceY += pageCanvas.height
+    pageIndex += 1
+  }
+
+  pdf.save(`${store.personalInfo.fullName || 'Resume'}.pdf`)
 }
 </script>
 
 <template>
   <div class="w-full mx-auto px-4 py-6">
-   {{ userStore.loading  }}
 
     <!-- HEADER -->
     <div class="text-center mb-6">
@@ -746,7 +1014,7 @@ async function generateResume() {
                   <UButton color="gray" variant="soft" size="lg" @click="exportAsPdf">
                     Export PDF
                   </UButton>
-                  <UButton color="primary" size="xl" class="px-12 font-bold shadow-lg" @click="generateResume">
+                  <UButton color="primary" size="xl" class="px-12 font-bold shadow-lg" :loading="isDownloading" @click="generateResume">
                     Generate Final Resume
                   </UButton>
                 </div>
@@ -767,14 +1035,18 @@ async function generateResume() {
           </UBadge>
           
         </div>
-        <ResumeTemplateSelector
-          v-model="store.selectedTemplateId"
-          @view-all="showTemplateModal = true"
-        />
-        <ResumeLivePreview
-          :template-id="store.selectedTemplateId"
-          :resume="resumePayload"
-        />
+        <ClientOnly>
+          <ResumeTemplateSelector
+            v-model="store.selectedTemplateId"
+            @view-all="showTemplateModal = true"
+          />
+          <div ref="previewRef" id="resume-pdf-container">
+            <ResumeLivePreview
+              :template-id="store.selectedTemplateId"
+              :resume="resumePayload"
+            />
+          </div>
+        </ClientOnly>
       </div>
 
     </div>
